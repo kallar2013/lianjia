@@ -5,6 +5,15 @@ from lianjia.items import Xiaoqu, Chengjiao, Plate
 from scrapy import Request
 import re
 import json
+import urllib.parse as up
+
+def get_plate_urls(base_url):
+    l = []
+    with open('./plates.jsonlines', 'r') as f:
+        for line in f.readlines():
+            l.append(base_url + json.loads(line)['url'])
+        return l
+
         
 class CjSpider(Spider):
     name = 'cj_sh'
@@ -15,8 +24,8 @@ class CjSpider(Spider):
     auth_url = 'https://passport.lianjia.com/cas/login?service=http%3A%2F%2Fbj.lianjia.com%2F'
     allowed_domains = ['lianjia.com']
     
-    #def start_requests(self):
-    #    return [Request(self.auth_url, callback=self.pre_login)]
+    def start_requests(self):
+        return [Request(self.auth_url, callback=self.pre_login)]
     
     def pre_login(self, response):
         pattern = re.compile(r'value=\"(LT-.*)\"')
@@ -39,11 +48,15 @@ class CjSpider(Spider):
         return [scrapy.FormRequest(self.auth_url, formdata=data, callback=self.after_login)]
         
     def after_login(self, response):
-        return [Request(self.base_url, callback=self.parse_page)]
+        plate_urls = get_plate_urls(self.base_url)
+        for plate_url in plate_urls:
+            yield Request(plate_url, callback=self.parse_page)
     
     def parse_page(self, response):
-    
+        # 首先解析页面的每一个成交元素，yield item
         for li in response.xpath('//ul[@class="clinch-list"]/li'):
+            deal_date, unit_price, total_price = li.xpath('.//div[@class="div-cun"]/text()').extract()
+            print('成交日期：', deal_date)
             yield parser.chengjiao_sh(li)
         # 找到下一页的链接，若有，则生成新的Request    
         next_page_href = ''.join(response.css('a[gahref="results_next_page"]::attr(href)').re('/chengjiao/([0-9a-z]+/d[0-9]+)'))
@@ -51,30 +64,16 @@ class CjSpider(Spider):
             return
         next_page_url = self.base_url + next_page_href
         yield Request(next_page_url, callback=self.parse_page)
-    
-    def parse(self, response):
-    
-        for li in response.xpath('//ul[@class="clinch-list"]/li'):
-            yield parser.chengjiao_sh(li)
-        # 找到下一页的链接，若有，则生成新的Request    
-        next_page_href = ''.join(response.css('a[gahref="results_next_page"]::attr(href)').re('/chengjiao/(d[0-9]+)'))
-        if not next_page_href:
-            return
-        next_page_url = self.base_url + next_page_href
-        yield Request(next_page_url)
         
 class XqSpider(Spider):
     #上海链家是个傻逼，会把重复的小区搞出来，所以爬下的数据有重复项。
     name = 'xq_sh'
     base_url = 'http://sh.lianjia.com/xiaoqu/'
-    start_urls= []
-    with open('./plates.jsonlines', 'r') as f:
-        for line in f.readlines():
-            start_urls.append(base_url + json.loads(line)['url'])
+    start_urls= get_plate_urls(base_url)
+    
     allowed_domains = ['lianjia.com']
     
     def parse(self, response):
-        # start district requests
         for li in response.xpath('//ul[@id="house-lst"]/li'):
             item = parser.xiaoqu_sh(li)
             yield item
@@ -109,3 +108,4 @@ class PlateSpider(Spider):
         plate_names = response.css('div[class="option-list sub-option-list gio_plate"] a[gahref!="plate-nolimit"]::text').extract()
         for url, name in zip(plate_urls, plate_names):
             yield Plate(name=name, url=url)'''
+            

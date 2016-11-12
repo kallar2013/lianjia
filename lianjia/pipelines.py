@@ -6,6 +6,7 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import sqlite3
 from scrapy.conf import settings
+from scrapy.exceptions import DropItem
 
 class SqlitePipeline(object):
     
@@ -13,6 +14,7 @@ class SqlitePipeline(object):
         self.conn = sqlite3.connect(settings['DB_NAME'])
         self.conn.text_factory = str
         self.cur = self.conn.cursor()
+        self.mids_seen = set()
         
     def process_item(self, item, spider):
         if spider.name == 'xq_sh':
@@ -24,15 +26,20 @@ class SqlitePipeline(object):
             return
         
     def do_insert_xq(self, item):
-        str_tag = settings['XIAOQU_STR']
-        qmark = ','.join(len(str_tag) * ['?'])
-        cols = '"' + '","'.join(str_tag) + '"'
-        sql = 'INSERT INTO xiaoqu (%s) VALUES (%s)' % (cols, qmark)
-        data = (item.get('mid', ''), item.get('title', ''), item.get('year', ''), item.get('ditie', ''), 
-            item.get('price', ''), item.get('onsale', ''), item.get('platename', ''), item.get('district', ''), 
-            item.get('city', ''), item.get('coordinate', ''))
-        self.cur.execute(sql, data)
-        self.conn.commit()
+        if item['mid'] in self.mids_seen:
+            raise DropItem('mid duplicate found: %s' % item)
+        else:
+            self.mids_seen.add(item['mid'])
+            str_tag = settings['XIAOQU_STR']
+            qmark = ','.join(len(str_tag) * ['?'])
+            cols = '"' + '","'.join(str_tag) + '"'
+            sql = 'INSERT INTO xiaoqu (%s) VALUES (%s)' % (cols, qmark)
+            data = (item.get('mid', ''), item.get('title', ''), item.get('year', ''), item.get('ditie', ''), 
+                item.get('price', ''), item.get('onsale', ''), item.get('platename', ''), item.get('district', ''), 
+                item.get('city', ''), item.get('coordinate', ''))
+            self.cur.execute(sql, data)
+            self.conn.commit()
+        
     def do_insert_cj(self, item):
         str_tag = settings['CHENGJIAO_STR']
         qmark = ','.join(len(str_tag) * ['?'])
