@@ -1,14 +1,21 @@
-from lianjia.items import Chengjiao, Xiaoqu
+from lianjia.items import Chengjiao, Xiaoqu, Ershoufang
 import re
+from scrapy.conf import settings
+
+crawl_date = settings['DATE']
 
 def ershoufang_sh(li):
-    mid = li.xpath('.//a[@name="selectDetail"]/@key').extract()[0]
+    try:
+        mid = li.xpath('.//a[@name="selectDetail"]/@key').extract()[0]
+    except IndexError:
+        return
     title = li.css('div[class="info-panel"] > h2 > a::text ').extract()[0]
     
     where = li.xpath('.//div[@class="where"]')
+    xq_id = where.xpath('./a[@class="laisuzhou"]/@href').re('/([0-9]+)\.')[0]
     xq_name = where.xpath('./a/span[@class="nameEllipsis"]/text()').extract()[0]
     house_type = where.xpath('./span[1]/text()').extract()[0].strip()
-    size = where.xpath('./span[2]/text()').re('[0-9\.]+')[0]
+    size = float(where.xpath('./span[2]/text()').re('[0-9\.]+')[0])
     
     cons = li.xpath('./div[2]/div[1]/div[2]/div/text()').re('[^\s\n\t\r]+')
     storey, orientation, built_year = ['']*3
@@ -21,7 +28,9 @@ def ershoufang_sh(li):
             elif '朝' in con:
                 orientation = con
             elif '建' in con:
-                built_year = re.search('[0-9]+', con).group()
+                built_year = con
+    if built_year:
+        built_year = re.search('[0-9]+', built_year).group()
     labels = li.xpath('.//div[@class="view-label left"]//text()').re('[^\s\t\r\n]+')
     
     subway, five_year, two_year, haskey = ['']*4
@@ -34,9 +43,15 @@ def ershoufang_sh(li):
             two_year = label
         elif '钥匙' in label:
             haskey = label
-    total_price = li.css('div[class="price"] > span::text').extract()[0]
-    unit_price = li.css('div[class="price-pre"]::text').re('[0-9]+')[0]
-    visited = li.css('div[class="square"] > div > span::text').extract()[0]
+            
+    total_price = int(li.css('div[class="price"] > span::text').extract()[0])
+    unit_price = int(li.css('div[class="price-pre"]::text').re('[0-9]+')[0])
+    visited = int(li.css('div[class="square"] > div > span::text').extract()[0])
+    
+    item = Ershoufang(mid=mid, xq_id=xq_id, title=title, house_type=house_type, built_year=built_year, size=size,
+        orientation=orientation, storey=storey, visited=visited, five_year=five_year, two_year=two_year, haskey=haskey,
+        subway=subway, total_price=total_price, unit_price=unit_price, crawl_date=crawl_date)
+    return item
 
 def chengjiao_sh(li):
     mid = li.css('h2[class="clear"] > a::attr(key)').extract()[0]

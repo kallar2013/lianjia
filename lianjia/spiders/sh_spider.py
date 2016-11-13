@@ -5,15 +5,30 @@ from lianjia.items import Xiaoqu, Chengjiao, Plate
 from scrapy import Request
 import re
 import json
-import urllib.parse as up
 
 def get_plate_urls(base_url):
-    l = []
-    with open('./plates.jsonlines', 'r') as f:
+    urls = set()
+    with open('./plates.dat', 'r') as f:
         for line in f.readlines():
-            l.append(base_url + json.loads(line)['url'])
-        return l
-
+            urls.add(base_url + json.loads(line)['url'])
+    return list(urls)
+    
+class EsfSpider(Spider):
+    name = 'esf_sh'
+    base_url = 'http://sh.lianjia.com/ershoufang/'
+    allowed_domains = ['lianjia.com', ]
+    start_urls = get_plate_urls(base_url)
+    
+    def parse(self, response):
+        for li in response.xpath('//ul[@id="house-lst"]/li'):
+            item = parser.ershoufang_sh(li)
+            yield item
+        # link to next page    
+        next_page_href = ''.join(response.css('a[gahref="results_next_page"]::attr(href)').re('/ershoufang/([0-9a-z]+/d[0-9]+)'))
+        if not next_page_href:
+            return
+        next_page_url = self.base_url + next_page_href
+        yield Request(next_page_url)
         
 class CjSpider(Spider):
     name = 'cj_sh'
@@ -70,9 +85,7 @@ class XqSpider(Spider):
     name = 'xq_sh'
     base_url = 'http://sh.lianjia.com/xiaoqu/'
     start_urls= get_plate_urls(base_url)
-    
     allowed_domains = ['lianjia.com']
-    
     def parse(self, response):
         for li in response.xpath('//ul[@id="house-lst"]/li'):
             item = parser.xiaoqu_sh(li)

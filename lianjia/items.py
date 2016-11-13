@@ -10,11 +10,26 @@ import scrapy
 class Plate(scrapy.Item):
     name = scrapy.Field()
     url = scrapy.Field()
+    
+class Ershoufang(scrapy.Item):
+    mid = scrapy.Field()
+    xq_id = scrapy.Field()
+    title = scrapy.Field()
+    house_type = scrapy.Field()
+    built_year = scrapy.Field()
+    size = scrapy.Field()
+    orientation = scrapy.Field()
+    storey = scrapy.Field()
+    visited = scrapy.Field()
+    five_year = scrapy.Field()
+    two_year = scrapy.Field()
+    haskey = scrapy.Field()
+    subway = scrapy.Field()
+    total_price = scrapy.Field()
+    unit_price = scrapy.Field()
+    crawl_date = scrapy.Field()
 
 class Xiaoqu(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    
     mid = scrapy.Field()
     title = scrapy.Field()
     year = scrapy.Field()
