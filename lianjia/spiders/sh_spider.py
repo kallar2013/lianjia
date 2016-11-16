@@ -1,17 +1,16 @@
 import scrapy
 from scrapy.spiders import Spider
 import lianjia.parsers as parser
-from lianjia.items import Xiaoqu, Chengjiao, Plate
 from scrapy import Request
 import re
 import json
 
 def get_plate_urls(base_url):
-    urls = set()
-    with open('./plates.dat', 'r') as f:
+    urls = []
+    with open('./plates/sh.dat', 'r') as f:
         for line in f.readlines():
-            urls.add(base_url + json.loads(line)['url'])
-    return list(urls)
+            urls.append(base_url + json.loads(line)['url'])
+    return urls
     
 class EsfSpider(Spider):
     name = 'esf_sh'
@@ -99,7 +98,7 @@ class XqSpider(Spider):
         yield Request(next_page_url)
         
 class PlateSpider(Spider):
-    name = 'plate'
+    name = 'plate_sh'
     base_url = 'http://sh.lianjia.com/xiaoqu/'
     start_urls=[base_url,]
     allowed_domains = ['lianjia.com']

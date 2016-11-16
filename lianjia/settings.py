@@ -8,23 +8,20 @@
 #     http://doc.scrapy.org/en/latest/topics/settings.html
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
-import time
+from datetime import datetime
 
+CITY_TAGS = {'bj': '北京', 'sz': '深圳', 'wh': '武汉'}
 BOT_NAME = 'lianjia'
 
 SPIDER_MODULES = ['lianjia.spiders']
 NEWSPIDER_MODULE = 'lianjia.spiders'
-XIAOQU_STR = ["小区ID", "小区名称", "建成年代", "地铁房", "小区均价", "在售二手房数量", "所在地点", "所在行政区", "所在城市", "坐标"]
-CHENGJIAO_STR = ('房源编号', "小区名称", "房屋户型", "建筑面积", "所在楼层", "房屋朝向",
-        "装修情况", "地铁房", "满五年唯一", "房本满两年", "售出时间", "出售单价", "出售总价")
-ERSHOUFANG_STR = ('房源编号', '小区ID', '标题', '户型', '建造年代', '建筑面积', '房屋朝向', '所在楼层', '浏览人数', '满五唯一', '房本满两年', '有钥匙', '附近地铁', '总价', '单价', '爬虫时间')
-DATE = time.strftime('%Y-%m-%d', time.localtime())
+DATE = datetime.now().date()
+# DATE = time.strftime('%Y-%m-%d', time.localtime())
 DB_NAME = 'c:\sqlite3\estate.db'
 ITEM_PIPELINES = {
     'lianjia.pipelines.SqlitePipeline': 0
     }
 LOG_FILE = 'scrapy.log'
-LOG_LEVEL = 'INFO'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'lianjia (+http://www.yourdomain.com)'
